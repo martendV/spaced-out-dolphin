@@ -1,7 +1,9 @@
-import {app, BrowserWindow, shell} from 'electron';
+import {app, BrowserWindow, ipcMain, shell} from 'electron';
 import {join} from 'path';
-import {URL} from 'url';
+import { URL } from 'url';
+import axios from "axios"
 
+axios.defaults.adapter = require('axios/lib/adapters/http');
 
 const isSingleInstance = app.requestSingleInstanceLock();
 
@@ -30,6 +32,7 @@ const createWindow = async () => {
   mainWindow = new BrowserWindow({
     show: false, // Use 'ready-to-show' event to show window
     webPreferences: {
+      nodeIntegration: true,
       nativeWindowOpen: true,
       preload: join(__dirname, '../../preload/dist/index.cjs'),
     },
@@ -101,4 +104,19 @@ if (import.meta.env.PROD) {
     .then(({autoUpdater}) => autoUpdater.checkForUpdatesAndNotify())
     .catch((e) => console.error('Failed check updates:', e));
 }
+
+ipcMain.on("sendMessageToPufferyChannel", async (event, ...args) => {
+  const data: any = args[0];
+  const notifyKey: string = data.notifyKey;
+  const title: string = data.title;
+  const body: string = data.body || "";
+  const color: string = data.color || "#3b3980";
+  let res: any;
+  res = await axios.post(
+    `https://vapor.puffery.app/notify/${notifyKey}`, {title,body,color}
+  ).catch((e) => {throw new Error(e)});
+  
+  
+  event.reply("messageSend", res.data);
+});
 

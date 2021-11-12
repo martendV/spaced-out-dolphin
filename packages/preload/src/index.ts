@@ -1,4 +1,4 @@
-import {contextBridge} from 'electron';
+import {contextBridge, ipcRenderer} from 'electron';
 
 const apiKey = 'electron';
 /**
@@ -15,3 +15,16 @@ const api: ElectronApi = {
  * @see https://www.electronjs.org/docs/api/context-bridge
  */
 contextBridge.exposeInMainWorld(apiKey, api);
+
+contextBridge.exposeInMainWorld('ipcRenderer', {
+  send: (channel: string, data: any) => {
+    // whitelist channels
+    let validChannels = ['sendMessageToPufferyChannel']
+    if (validChannels.includes(channel)) {
+      ipcRenderer.send(channel, data)
+    }
+  },
+  on: (event: string, listener: any) => {
+    ipcRenderer.on(event, listener)
+  }
+})
